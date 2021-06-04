@@ -166,15 +166,17 @@ int createLBServerSocket(const char* server_address) {
     server_addr.sin_family = AF_INET;
     inet_pton(AF_INET, server_address, &(server_addr.sin_addr));
     server_addr.sin_port = htons(SERVERS_PORT);
-
+    printf("before Create lb_Server socket");
     /* Create client socket */
     int lb_server_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (lb_server_socket == -1) {
         fprintf(stderr, "Error creating socket --> %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
+    printf("before Connect to lb_Server socket");
     /* Connect to the server */
     if (connect(lb_server_socket, (struct sockaddr *)&server_addr, sizeof(struct sockaddr)) == -1) {
+        printf("printf Error on connect --> %s\n", strerror(errno));
         fprintf(stderr, "Error on connect --> %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
