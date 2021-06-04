@@ -26,7 +26,7 @@ typedef struct ServerConnection {
 } *ServerConnection;
 
 void printServerConnections(ServerConnection servers_connections[]) {
-    for(int i = 0; i <= SERVERS_COUNT; i++) {
+    for(int i = 0; i < SERVERS_COUNT; i++) {
         printf("server_name: %s\n", servers_connections[i]->server_name);
         printf("server_address: %s\n", servers_connections[i]->server_address);
         printf("lb_server_socket: %d\n", servers_connections[i]->lb_server_socket);
@@ -182,15 +182,17 @@ int createLBServerSocket(const char* server_address) {
 }
 
 void initServerConnections(ServerConnection servers_connections[]) {
-    for(int i = 0; i <= SERVERS_COUNT; i++) {
+    for(int i = 0; i < SERVERS_COUNT; i++) {
         servers_connections[i] = (ServerConnection)malloc(sizeof(struct ServerConnection));
         char servNumber = (char)i + '1';
         char server_name[] = "serv$";
         server_name[4] = servNumber;
         char server_address[] = "192.168.0.10$";
         server_address[12] = servNumber;
+        printf("before strcpy\n");
         strcpy(servers_connections[i]->server_name, server_name);
         strcpy(servers_connections[i]->server_address, server_address);
+        printf("after strcpy\n");
         servers_connections[i]->load = 0;
         servers_connections[i]->delta = 0;
         servers_connections[i]->new_load = 0;
