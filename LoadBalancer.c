@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <limits.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -148,7 +149,7 @@ int createLBServerSocket(const char* server_address) {
     server_addr.sin_family = AF_INET;
     inet_pton(AF_INET, server_address, &(server_addr.sin_addr));
     server_addr.sin_port = htons(SERVERS_PORT);
-    printf("next line should have ip value", "\n");
+    printf("next line should have ip value\n");
     printf("%d\n", server_addr.sin_addr.s_addr);
 
     /* Create client socket */
@@ -168,8 +169,9 @@ int createLBServerSocket(const char* server_address) {
 void initServerConnections(ServerConnection servers_connections[]) {
     for(int i = 1; i <= SERVERS_COUNT; i++) {
         servers_connections[i] = (ServerConnection)malloc(sizeof(struct ServerConnection));
-        char* server_name = strcat("serv", i + '0');
-        char* server_address = strcat("192.168.0.10", i + '0');
+        char servNumber = i + '0';
+        char* server_name = strcat("serv", &servNumber);
+        char* server_address = strcat("192.168.0.10", &servNumber);
         strcpy(servers_connections[i]->server_name, server_name);
         strcpy(servers_connections[i]->server_address, server_address);
         servers_connections[i]->load = 0;
