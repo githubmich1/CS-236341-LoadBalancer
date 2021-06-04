@@ -161,30 +161,30 @@ int chooseServer(ServerConnection servers_connections[], char buffer[]) {
 
 
 int createLBServerSocket(char* server_address) {
-    printf("0");
+    printf("0\n");
     struct sockaddr_in server_addr;
-    printf("1");
+    printf("1\n");
     memset(&server_addr, 0, sizeof(server_addr));
-    printf("2");
+    printf("2\n");
     server_addr.sin_family = AF_INET;
-    printf("3");
+    printf("3\n");
     inet_pton(AF_INET, server_address, &(server_addr.sin_addr));
-    printf("4");
+    printf("4\n");
     server_addr.sin_port = htons(SERVERS_PORT);
-    printf("before Create lb_Server socket");
+    printf("before Create lb_Server socket\n");
     /* Create client socket */
     int lb_server_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (lb_server_socket == -1) {
         fprintf(stderr, "Error creating socket --> %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
-    printf("before Connect to lb_Server socket");
+    printf("before Connect to lb_Server socket\n");
     /* Connect to the server */
-    if (connect(lb_server_socket, (struct sockaddr *)&server_addr, sizeof(struct sockaddr)) == -1) {
-        printf("printf Error on connect --> %s\n", strerror(errno));
-        fprintf(stderr, "Error on connect --> %s\n", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
+    // if (connect(lb_server_socket, (struct sockaddr *)&server_addr, sizeof(struct sockaddr)) == -1) {
+    //     printf("printf Error on connect --> %s\n", strerror(errno));
+    //     fprintf(stderr, "Error on connect --> %s\n", strerror(errno));
+    //     exit(EXIT_FAILURE);
+    // }
     return lb_server_socket;
 }
 
