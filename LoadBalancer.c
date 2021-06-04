@@ -162,9 +162,13 @@ int chooseServer(ServerConnection servers_connections[], char buffer[]) {
 
 int createLBServerSocket(const char* server_address) {
     struct sockaddr_in server_addr;
+    printf("1");
     memset(&server_addr, 0, sizeof(server_addr));
+    printf("2");
     server_addr.sin_family = AF_INET;
+    printf("3");
     inet_pton(AF_INET, server_address, &(server_addr.sin_addr));
+    printf("4");
     server_addr.sin_port = htons(SERVERS_PORT);
     printf("before Create lb_Server socket");
     /* Create client socket */
