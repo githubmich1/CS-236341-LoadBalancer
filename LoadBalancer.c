@@ -27,23 +27,26 @@ typedef struct ServerConnection {
 
 void printServerConnections(ServerConnection servers_connections[]) {
     for(int i = 0; i <= SERVERS_COUNT; i++) {
-        printf("server_name: %s", servers_connections[i]->server_name);
-        printf("server_address: %s", servers_connections[i]->server_address);
-        printf("lb_server_socket: %d", servers_connections[i]->lb_server_socket);
-        printf("load: %d", servers_connections[i]->load);
-        printf("delta: %d", servers_connections[i]->delta);
-        printf("new_load: %d", servers_connections[i]->new_load);
-        printf("\n\n");
+        printf("server_name: %s\n", servers_connections[i]->server_name);
+        printf("server_address: %s\n", servers_connections[i]->server_address);
+        printf("lb_server_socket: %d\n", servers_connections[i]->lb_server_socket);
+        printf("load: %d\n", servers_connections[i]->load);
+        printf("delta: %d\n", servers_connections[i]->delta);
+        printf("new_load: %d\n", servers_connections[i]->new_load);
+        printf("\n");
     }
 }
+
 int chooseServer(ServerConnection servers_connections[], char buffer[]);
 void initServerConnections(ServerConnection servers_connections[]);
 
 int main() {
+    printf("before Connect To Servers\n");
     // ------------------------------- Connect To Servers -------------------------------
     ServerConnection servers_connections[SERVERS_COUNT];
     initServerConnections(servers_connections);
-
+    printServerConnections(servers_connections);
+    printf("before Listen To Clients\n");
     // ------------------------------- Listen To Clients -------------------------------
     int master_socket = socket(AF_INET, SOCK_STREAM, 0);
     /* Create server socket */
@@ -64,18 +67,18 @@ int main() {
         fprintf(stderr, "Error on bind --> %s", strerror(errno));
         exit(EXIT_FAILURE);
     }
-
+    printf("before Listening to incoming connections\n");
     /* Listening to incoming connections allowing 5 connections */
     if ((listen(master_socket, 5)) == -1) {
         fprintf(stderr, "Error on listen --> %s", strerror(errno));
         exit(EXIT_FAILURE);
     }
 
+    printf("before Accept Clients\n");
     // ------------------------------- Accept Clients -------------------------------
     socklen_t sock_len = sizeof(struct sockaddr_in);
     struct sockaddr_in client_addr;
     char buffer[256];
-    printServerConnections(servers_connections);
     while(1) {
         fprintf(stdout, "stdout Before Accept\n");
         fprintf(stdout, "stderr Before Accept\n");
@@ -136,12 +139,10 @@ int chooseServer(ServerConnection servers_connections[], char buffer[]) {
     //     servers_connections[i]->new_load = servers_connections[i]->load + servers_connections[i]->delta;
     //     if (servers_connections[i]->new_load < min_load) {
     //         min_load = servers_connections[i]->new_load;
-    //         server_index = i;
-    //     }
-    //     else if ((servers_connections[i]->new_load == min_load) && (servers_connections[i]->delta < min_delta)) {
+    //     } else if ((servers_connections[i]->new_load == min_load) && (servers_connections[i]->delta < min_delta)) {
     //         min_delta = servers_connections[i]->delta;
-    //         server_index = i;
     //     }
+    //     server_index = i;
     // }
 
     // servers_connections[server_index]->load += servers_connections[server_index]->delta;
