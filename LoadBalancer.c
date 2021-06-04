@@ -29,7 +29,7 @@ void printServerConnections(ServerConnection servers_connections[]) {
     for(int i = 0; i <= SERVERS_COUNT; i++) {
         printf("server_name: %s", servers_connections[i]->server_name);
         printf("server_address: %s", servers_connections[i]->server_address);
-        printf("lb_server_socket: %s", servers_connections[i]->lb_server_socket);
+        printf("lb_server_socket: %d", servers_connections[i]->lb_server_socket);
         printf("load: %d", servers_connections[i]->load);
         printf("delta: %d", servers_connections[i]->delta);
         printf("new_load: %d", servers_connections[i]->new_load);
