@@ -160,7 +160,8 @@ int chooseServer(ServerConnection servers_connections[], char buffer[]) {
 
 
 
-int createLBServerSocket(const char* server_address) {
+int createLBServerSocket(char* server_address) {
+    printf("0");
     struct sockaddr_in server_addr;
     printf("1");
     memset(&server_addr, 0, sizeof(server_addr));
