@@ -169,9 +169,11 @@ int createLBServerSocket(const char* server_address) {
 void initServerConnections(ServerConnection servers_connections[]) {
     for(int i = 1; i <= SERVERS_COUNT; i++) {
         servers_connections[i] = (ServerConnection)malloc(sizeof(struct ServerConnection));
-        char servNumber = i + '0';
-        char* server_name = strcat("serv", &servNumber);
-        char* server_address = strcat("192.168.0.10", &servNumber);
+        char servNumber = (char)i + '0';
+        char server_name[] = "serv$";
+        server_name[4] = servNumber;
+        char server_address[] = "192.168.0.10$";
+        server_address[12] = servNumber;
         strcpy(servers_connections[i]->server_name, server_name);
         strcpy(servers_connections[i]->server_address, server_address);
         servers_connections[i]->load = 0;
