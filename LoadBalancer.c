@@ -25,6 +25,17 @@ typedef struct ServerConnection {
     
 } *ServerConnection;
 
+void printServerConnections(ServerConnection servers_connections[]) {
+    for(int i = 0; i <= SERVERS_COUNT; i++) {
+        printf("server_name: %s", servers_connections[i]->server_name);
+        printf("server_address: %s", servers_connections[i]->server_address);
+        printf("lb_server_socket: %s", servers_connections[i]->lb_server_socket);
+        printf("load: %d", servers_connections[i]->load);
+        printf("delta: %d", servers_connections[i]->delta);
+        printf("new_load: %d", servers_connections[i]->new_load);
+        printf("\n\n");
+    }
+}
 int chooseServer(ServerConnection servers_connections[], char buffer[]);
 void initServerConnections(ServerConnection servers_connections[]);
 
@@ -64,9 +75,13 @@ int main() {
     socklen_t sock_len = sizeof(struct sockaddr_in);
     struct sockaddr_in client_addr;
     char buffer[256];
-
+    printServerConnections(servers_connections);
     while(1) {
+        fprintf(stdout, "stdout Before Accept\n");
+        fprintf(stdout, "stderr Before Accept\n");
         int client_socket = accept(master_socket, (struct sockaddr *)&client_addr, &sock_len);
+        fprintf(stderr, "stderr After Accept\n");
+
         if (client_socket == -1) {
             fprintf(stderr, "Error on accept --> %s", strerror(errno));
             exit(EXIT_FAILURE);
@@ -96,40 +111,41 @@ int main() {
 }
 
 int chooseServer(ServerConnection servers_connections[], char buffer[]) {
-    int delta = 0;
-    if (buffer[0] == 'M') {
-        servers_connections[0]->delta = 2 * (buffer[1] - '0');
-        servers_connections[1]->delta = 2 * (buffer[1] - '0');
-        servers_connections[2]->delta = 1 * (buffer[1] - '0');
-    }
-    if (buffer[0] == 'V') {
-        servers_connections[0]->delta = 1 * (buffer[1] - '0');
-        servers_connections[1]->delta = 1 * (buffer[1] - '0');
-        servers_connections[2]->delta = 3 * (buffer[1] - '0');
-    }
-    if (buffer[0] == 'P') {
-        servers_connections[0]->delta = 1 * (buffer[1] - '0');
-        servers_connections[1]->delta = 1 * (buffer[1] - '0');
-        servers_connections[2]->delta = 2 * (buffer[1] - '0');
-    }
+    return 0;
+    // int delta = 0;
+    // if (buffer[0] == 'M') {
+    //     servers_connections[0]->delta = 2 * (buffer[1] - '0');
+    //     servers_connections[1]->delta = 2 * (buffer[1] - '0');
+    //     servers_connections[2]->delta = 1 * (buffer[1] - '0');
+    // }
+    // if (buffer[0] == 'V') {
+    //     servers_connections[0]->delta = 1 * (buffer[1] - '0');
+    //     servers_connections[1]->delta = 1 * (buffer[1] - '0');
+    //     servers_connections[2]->delta = 3 * (buffer[1] - '0');
+    // }
+    // if (buffer[0] == 'P') {
+    //     servers_connections[0]->delta = 1 * (buffer[1] - '0');
+    //     servers_connections[1]->delta = 1 * (buffer[1] - '0');
+    //     servers_connections[2]->delta = 2 * (buffer[1] - '0');
+    // }
 
-    int server_index = 0;
-    int min_load = INT_MAX;
-    int min_delta = INT_MAX;
-    for (int i = 0; i < SERVERS_COUNT; ++i) {
-        servers_connections[i]->new_load = servers_connections[i]->load + servers_connections[i]->delta;
-        if (servers_connections[i]->new_load < min_load) {
-            min_load = servers_connections[i]->new_load;
-            server_index = i;
-        }
-        else if ((servers_connections[i]->new_load == min_load) && (servers_connections[i]->delta < min_delta)) {
-            min_delta = servers_connections[i]->delta;
-            server_index = i;
-        }
-    }
+    // int server_index = 0;
+    // int min_load = INT_MAX;
+    // int min_delta = INT_MAX;
+    // for (int i = 0; i < SERVERS_COUNT; ++i) {
+    //     servers_connections[i]->new_load = servers_connections[i]->load + servers_connections[i]->delta;
+    //     if (servers_connections[i]->new_load < min_load) {
+    //         min_load = servers_connections[i]->new_load;
+    //         server_index = i;
+    //     }
+    //     else if ((servers_connections[i]->new_load == min_load) && (servers_connections[i]->delta < min_delta)) {
+    //         min_delta = servers_connections[i]->delta;
+    //         server_index = i;
+    //     }
+    // }
 
-    servers_connections[server_index]->load += servers_connections[server_index]->delta;
-    return server_index;
+    // servers_connections[server_index]->load += servers_connections[server_index]->delta;
+    // return server_index;
 }
 
 
@@ -149,8 +165,6 @@ int createLBServerSocket(const char* server_address) {
     server_addr.sin_family = AF_INET;
     inet_pton(AF_INET, server_address, &(server_addr.sin_addr));
     server_addr.sin_port = htons(SERVERS_PORT);
-    printf("next line should have ip value\n");
-    printf("%d\n", server_addr.sin_addr.s_addr);
 
     /* Create client socket */
     int lb_server_socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -167,9 +181,9 @@ int createLBServerSocket(const char* server_address) {
 }
 
 void initServerConnections(ServerConnection servers_connections[]) {
-    for(int i = 1; i <= SERVERS_COUNT; i++) {
+    for(int i = 0; i <= SERVERS_COUNT; i++) {
         servers_connections[i] = (ServerConnection)malloc(sizeof(struct ServerConnection));
-        char servNumber = (char)i + '0';
+        char servNumber = (char)i + '1';
         char server_name[] = "serv$";
         server_name[4] = servNumber;
         char server_address[] = "192.168.0.10$";
