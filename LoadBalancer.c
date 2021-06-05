@@ -18,21 +18,6 @@
 #define SERVERS_COUNT 3
 #define BUFFER_SIZE 256
 
-
-//Each server has a cyclic buffer of requests it sent (so when the request finishes we can decrease its load from the load field//
-typedef struct ServerConnection {
-    char server_name[10];
-    char server_address[15];
-    int lb_server_socket;
-    int load;
-    int delta;
-    int new_load;
-    CyclicBuffer request_fifo;
-
-} *ServerConnection;
-
-
-
 typedef struct CustomerRequest {
     int customer_num;
     char request_type;
@@ -47,6 +32,18 @@ typedef struct CyclicBuffer {
 
 } *CyclicBuffer;
 
+//Each server has a cyclic buffer of requests it sent (so when the request finishes we can decrease its load from the load field//
+typedef struct ServerConnection {
+    char server_name[10];
+    char server_address[15];
+    int lb_server_socket;
+    int load;
+    int delta;
+    int new_load;
+    CyclicBuffer request_fifo;
+
+} *ServerConnection;
+
 int chooseServer(ServerConnection servers_connections[], char request_type, int request_len);
 void initServerConnections(ServerConnection servers_connections[]);
 
@@ -54,6 +51,12 @@ void InitRequest(CustomerRequest c, int customer_num, char request_type, int req
     c->customer_num = customer_num;
     c->request_type = request_type;
     c->request_len = request_len;
+}
+
+CustomerRequest Pop(CyclicBuffer cyclic_buffer) {
+    CustomerRequest c = cyclic_buffer->fifo[cyclic_buffer->fifo_read] ;
+    cyclic_buffer->fifo_read = (cyclic_buffer->fifo_read + 1) % BUFFER_SIZE;
+    return c;
 }
 
 //Removes a request from the server of number 'server_num'//
@@ -77,6 +80,14 @@ void RemoveCustomerRequest(ServerConnection servers_connections[], int server_nu
     
     assert(s->load >= 0);
 
+}
+
+void Push(CyclicBuffer cyclic_buffer, CustomerRequest c) {
+    assert(cyclic_buffer->fifo_full == false);
+    cyclic_buffer->fifo[cyclic_buffer->fifo_write] = c;
+    cyclic_buffer->fifo_write = (cyclic_buffer->fifo_write + 1) % BUFFER_SIZE;
+    if (cyclic_buffer->fifo_read == cyclic_buffer->fifo_write) cyclic_buffer->fifo_full = true;
+   
 }
 
 //Adds a request to a server (which will be chosen appropriatly by chooseServer method)//
@@ -120,23 +131,6 @@ void InitCyclicBuffer(CyclicBuffer c) {
     c->fifo_read = 0;
     c->fifo_write = 0;
 }
-
-
-
-void Push(CyclicBuffer cyclic_buffer, CustomerRequest c) {
-    assert(cyclic_buffer->fifo_full == false);
-    cyclic_buffer->fifo[cyclic_buffer->fifo_write] = c;
-    cyclic_buffer->fifo_write = (cyclic_buffer->fifo_write + 1) % BUFFER_SIZE;
-    if (cyclic_buffer->fifo_read == cyclic_buffer->fifo_write) cyclic_buffer->fifo_full = true;
-   
-}
-
-CustomerRequest Pop(CyclicBuffer cyclic_buffer) {
-    CustomerRequest c = cyclic_buffer->fifo[cyclic_buffer->fifo_read] ;
-    cyclic_buffer->fifo_read = (cyclic_buffer->fifo_read + 1) % BUFFER_SIZE;
-    return c;
-}
-
 
 int main() {
     CustomerRequest cyclic_buffer[BUFFER_SIZE];
