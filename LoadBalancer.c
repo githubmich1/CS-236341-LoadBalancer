@@ -185,7 +185,7 @@ int main() {
         }
         fprintf(stdout, "Accept peer --> %s\n", inet_ntoa(client_addr.sin_addr));
 
-        if (fork() == 0) {
+        //if (fork() == 0) {
             int data_len = recv(client_socket, buffer, sizeof(buffer), 0);
             if (data_len < 0) {
                 fprintf(stderr, "Error on receiving command --> %s", strerror(errno));
@@ -199,11 +199,10 @@ int main() {
 
             send(client_socket, buffer, sizeof(buffer), 0);
             close(client_socket);
-            close(master_socket);
-        }
-        else {
-            close(client_socket);
-        }
+        //     close(master_socket);
+        // } else {
+        //     close(client_socket);
+        // }
     }
     //    close(master_socket);
     //    return 0;
