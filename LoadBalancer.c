@@ -95,7 +95,7 @@ void AddCustomerRequest(ServerConnection servers_connections[], CustomerRequest 
     int server_num = chooseServer(servers_connections, c->request_type, c->request_len);
     ServerConnection s = servers_connections[server_num];
     int multiplier = 0;
-    Push(s->request_fifo,c);
+    Push(s->request_fifo, c);
     if (server_num == 0 || server_num == 1) {
         if (c->request_type == 'M') multiplier = 2;
         if (c->request_type == 'P') multiplier = 1;
@@ -152,17 +152,18 @@ int main() {
     struct sockaddr_in server_addr;
     memset(&server_addr, 0, sizeof(server_addr));/* Zeroing server address struct */
     server_addr.sin_family = AF_INET;//filling it
-    inet_pton(AF_INET, LB_ADDRESS, &(server_addr.sin_addr)); // or : server_addr.sin_addr.s_addr = INADDR_ANY
+    //inet_pton(AF_INET, LB_ADDRESS, &(server_addr.sin_addr)); // or : 
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     server_addr.sin_port = htons(LB_PORT);
 
     /* Bind */
-    if ((bind(master_socket, (struct sockaddr*)&server_addr, sizeof(struct sockaddr))) == -1) {
+    if ((bind(master_socket, (struct sockaddr*)&server_addr, sizeof(struct sockaddr))) != 0) {
         fprintf(stderr, "Error on bind --> %s", strerror(errno));
         exit(EXIT_FAILURE);
     }
     printf("before Listening to incoming connections\n");
     /* Listening to incoming connections allowing 5 connections */
-    if ((listen(master_socket, 5)) == -1) {
+    if ((listen(master_socket, 5)) != 0) {
         fprintf(stderr, "Error on listen --> %s", strerror(errno));
         exit(EXIT_FAILURE);
     }
@@ -197,6 +198,7 @@ int main() {
             recv(server_conn->lb_server_socket, buffer, sizeof(buffer), 0);
 
             send(client_socket, buffer, sizeof(buffer), 0);
+            close(client_socket);
             close(master_socket);
         }
         else {
@@ -211,19 +213,19 @@ int chooseServer(ServerConnection servers_connections[], char request_type, int 
     return 0;
     // int delta = 0;
     // if (request_type == 'M') {
-    //     servers_connections[0]->delta = 2 * (request_len - '0');
-    //     servers_connections[1]->delta = 2 * (request_len - '0');
-    //     servers_connections[2]->delta = 1 * (request_len - '0');
+    //     servers_connections[0]->delta = 2 * (request_len);
+    //     servers_connections[1]->delta = 2 * (request_len);
+    //     servers_connections[2]->delta = 1 * (request_len);
     // }
     // if (request_type == 'V') {
-    //     servers_connections[0]->delta = 1 * (request_len - '0');
-    //     servers_connections[1]->delta = 1 * (request_len - '0');
-    //     servers_connections[2]->delta = 3 * (request_len - '0');
+    //     servers_connections[0]->delta = 1 * (request_len);
+    //     servers_connections[1]->delta = 1 * (request_len);
+    //     servers_connections[2]->delta = 3 * (request_len);
     // }
     // if (request_type == 'P') {
-    //     servers_connections[0]->delta = 1 * (request_len - '0');
-    //     servers_connections[1]->delta = 1 * (request_len - '0');
-    //     servers_connections[2]->delta = 2 * (request_len - '0');
+    //     servers_connections[0]->delta = 1 * (request_len);
+    //     servers_connections[1]->delta = 1 * (request_len);
+    //     servers_connections[2]->delta = 2 * (request_len);
     // }
 
     // int server_index = 0;
@@ -233,10 +235,13 @@ int chooseServer(ServerConnection servers_connections[], char request_type, int 
     //     servers_connections[i]->new_load = servers_connections[i]->load + servers_connections[i]->delta;
     //     if (servers_connections[i]->new_load < min_load) {
     //         min_load = servers_connections[i]->new_load;
+    //         min_delta = servers_connections[i]->delta;
+    //         server_index = i;
     //     } else if ((servers_connections[i]->new_load == min_load) && (servers_connections[i]->delta < min_delta)) {
     //         min_delta = servers_connections[i]->delta;
+    //         server_index = i;
     //     }
-    //     server_index = i;
+    //    
     // }
 
     // servers_connections[server_index]->load += servers_connections[server_index]->delta;
@@ -255,13 +260,12 @@ int chooseServer(ServerConnection servers_connections[], char request_type, int 
 
 
 int createLBServerSocket(char* server_address) {
-    printf("0\n");
+    printf("in createLBServerSocket %s\n", server_address);
     struct sockaddr_in server_addr;
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
-    printf("server_address: %s\n", server_address);
-    inet_pton(AF_INET, server_address, &(server_addr.sin_addr));
-    printf("4\n");
+    server_addr.sin_addr.s_addr = inet_addr(server_address);
+    //inet_pton(AF_INET, server_address, &(server_addr.sin_addr));
     server_addr.sin_port = htons(SERVERS_PORT);
     printf("before Create lb_Server socket\n");
     /* Create client socket */
@@ -272,10 +276,11 @@ int createLBServerSocket(char* server_address) {
     }
     printf("before Connect to lb_Server socket\n");
     /* Connect to the server */
-    if (connect(lb_server_socket, (struct sockaddr *)&server_addr, sizeof(struct sockaddr)) == -1) {
-        printf("printf Error on connect --> %s\n", strerror(errno));
+    if (connect(lb_server_socket, (struct sockaddr *)&server_addr, sizeof(struct sockaddr)) != 0) {
         fprintf(stderr, "Error on connect --> %s\n", strerror(errno));
         exit(EXIT_FAILURE);
+    } else {
+        printf("Connected to the server %s\n", server_address);
     }
     return lb_server_socket;
 }
