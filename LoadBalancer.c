@@ -12,7 +12,7 @@
 #include <stdbool.h>
 #include <assert.h>
 
-#define LB_ADDRESS "127.0.0.1"
+#define LB_ADDRESS "10.0.0.1"
 #define LB_PORT 80
 #define SERVERS_PORT 80
 #define SERVERS_COUNT 3
@@ -180,7 +180,7 @@ int main() {
     char buffer[256];
     while (1) {
         fprintf(stdout, "stdout Before Accept\n");
-        fprintf(stdout, "stderr Before Accept\n");
+        fprintf(stderr, "stderr Before Accept\n");
         int client_socket = accept(master_socket, (struct sockaddr*)&client_addr, &sock_len);
         fprintf(stderr, "stderr After Accept\n");
 
@@ -263,11 +263,9 @@ int chooseServer(ServerConnection servers_connections[], char request_type, int 
 int createLBServerSocket(char* server_address) {
     printf("0\n");
     struct sockaddr_in server_addr;
-    printf("1\n");
     memset(&server_addr, 0, sizeof(server_addr));
-    printf("2\n");
     server_addr.sin_family = AF_INET;
-    printf("3\n");
+    printf("server_address: %s\n", server_address);
     inet_pton(AF_INET, server_address, &(server_addr.sin_addr));
     printf("4\n");
     server_addr.sin_port = htons(SERVERS_PORT);
