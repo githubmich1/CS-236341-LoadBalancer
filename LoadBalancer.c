@@ -51,7 +51,7 @@ ServerConnection servers_connections[SERVERS_COUNT];
 int chooseServer(ServerConnection servers_connections[], char request_type, int request_len);
 void initServerConnections(ServerConnection servers_connections[]);
 void *clientToServerThread(void *vargp);
-void serverToClientThread(void *vargp);
+void *serverToClientThread(void *vargp);
 
 void InitRequest(CustomerRequest c, int customer_num, char request_type, int request_len) {
     c->customer_num = customer_num;
@@ -309,7 +309,7 @@ void *clientToServerThread(void *vargp) {
     return (void *) result;
 }
 
-void serverToClientThread(void *vargp) {
+void *serverToClientThread(void *vargp) {
     int server_index = *((int *) vargp);
     ServerConnection server_conn = servers_connections[server_index];
     CustomerRequest customer_req = RemoveCustomerRequest(servers_connections, server_index);
