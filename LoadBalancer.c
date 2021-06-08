@@ -18,10 +18,9 @@
 #define SERVERS_PORT 80
 #define SERVERS_COUNT 3
 #define BUFFER_SIZE 256
-ServerConnection servers_connections[SERVERS_COUNT];
 
 typedef struct CustomerRequest {
-    int client_socket
+    int client_socket;
     int customer_num;
     char request_type;
     int request_len;
@@ -46,6 +45,8 @@ typedef struct ServerConnection {
     CyclicBuffer request_fifo;
 
 } *ServerConnection;
+
+ServerConnection servers_connections[SERVERS_COUNT];
 
 int chooseServer(ServerConnection servers_connections[], char request_type, int request_len);
 void initServerConnections(ServerConnection servers_connections[]);
@@ -320,6 +321,6 @@ void serverToClientThread(void *vargp) {
     printf("received buffer from server: %c%c\n", buffer[0], buffer[1]);
     
     send(customer_req->client_socket, buffer, sizeof(buffer), 0);
-    close(client_socket);
+    close(customer_req->client_socket);
     pthread_exit(0);
 }
