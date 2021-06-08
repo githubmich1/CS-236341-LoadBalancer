@@ -177,12 +177,12 @@ int main() {
         if (client_thread_id) pthread_join(client_thread_id, (void**) &server_index);
 
         if (server_thread_id)  pthread_join(server_thread_id, NULL);
-        if (client_thread_id)  pthread_create(&server_thread_id, NULL, serverToClientThread, server_index);
+        if (client_thread_id)  pthread_create(&server_thread_id, NULL, &serverToClientThread, server_index);
 
         printf("Waiting on \'accept\'\n");
         int client_socket = accept(master_socket, (struct sockaddr*)&client_addr, &sock_len);
 
-        pthread_create(&client_thread_id, NULL, clientToServerThread, &client_socket);
+        pthread_create(&client_thread_id, NULL, &clientToServerThread, &client_socket);
 
         if (client_socket == -1) {
             fprintf(stderr, "Error on accept --> %s", strerror(errno));
