@@ -11,14 +11,17 @@
 #include <netinet/in.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <pthread.h>
 
 #define LB_ADDRESS "10.0.0.1"
 #define LB_PORT 80
 #define SERVERS_PORT 80
 #define SERVERS_COUNT 3
 #define BUFFER_SIZE 256
+ServerConnection servers_connections[SERVERS_COUNT];
 
 typedef struct CustomerRequest {
+    int client_socket
     int customer_num;
     char request_type;
     int request_len;
@@ -60,7 +63,7 @@ CustomerRequest Pop(CyclicBuffer cyclic_buffer) {
 }
 
 //Removes a request from the server of number 'server_num'//
-void RemoveCustomerRequest(ServerConnection servers_connections[], int server_num) {
+CustomerRequest RemoveCustomerRequest(ServerConnection servers_connections[], int server_num) {
     ServerConnection s = servers_connections[server_num];
     int multiplier = 0;
     CustomerRequest c = Pop(s->request_fifo);
@@ -79,7 +82,7 @@ void RemoveCustomerRequest(ServerConnection servers_connections[], int server_nu
     s->load -= delta;
 
     assert(s->load >= 0);
-
+    return c;
 }
 
 void Push(CyclicBuffer cyclic_buffer, CustomerRequest c) {
@@ -91,7 +94,7 @@ void Push(CyclicBuffer cyclic_buffer, CustomerRequest c) {
 }
 
 //Adds a request to a server (which will be chosen appropriatly by chooseServer method)//
-void AddCustomerRequest(ServerConnection servers_connections[], CustomerRequest c) {
+int AddCustomerRequest(ServerConnection servers_connections[], CustomerRequest c) {
     int server_num = chooseServer(servers_connections, c->request_type, c->request_len);
     ServerConnection s = servers_connections[server_num];
     int multiplier = 0;
@@ -109,11 +112,8 @@ void AddCustomerRequest(ServerConnection servers_connections[], CustomerRequest 
     }
     int delta = multiplier * c->request_len;
     s->load += delta;
-
-
-
+    return server_num;
 }
-
 
 void printServerConnections(ServerConnection servers_connections[]) {
     for (int i = 0; i < SERVERS_COUNT; i++) {
@@ -135,7 +135,6 @@ void InitCyclicBuffer(CyclicBuffer c) {
 int main() {
     CustomerRequest cyclic_buffer[BUFFER_SIZE];
     // ------------------------------- Connect To Servers -------------------------------
-    ServerConnection servers_connections[SERVERS_COUNT];
     initServerConnections(servers_connections);
     printServerConnections(servers_connections);
     // ------------------------------- Listen To Clients -------------------------------
@@ -168,9 +167,19 @@ int main() {
     socklen_t sock_len = sizeof(struct sockaddr_in);
     struct sockaddr_in client_addr;
     char buffer[2];
+    pthread_t client_thread_id = NULL;
+    pthread_t server_thread_id = NULL;
     while (1) {
+        void *returnValue; //server_index
+        if (client_thread_id) pthread_join(client_thread_id, &returnValue);
+
+        if (server_thread_id)  pthread_join(server_thread_id, NULL);
+        if (client_thread_id)  pthread_create(&server_thread_id, NULL, serverToClientThread, returnValue);
+
         printf(stderr, "Waiting on \'accept\'\n");
         int client_socket = accept(master_socket, (struct sockaddr*)&client_addr, &sock_len);
+
+        pthread_create(&client_thread_id, NULL, clientToServerThread, &client_socket);
 
         if (client_socket == -1) {
             fprintf(stderr, "Error on accept --> %s", strerror(errno));
@@ -178,31 +187,9 @@ int main() {
         }
         char* client_ip_address = inet_ntoa(client_addr.sin_addr);
         fprintf(stdout, "Accept peer --> %s\n", client_ip_address);
-
-        //if (fork() == 0) {
-        int data_len = recv(client_socket, buffer, sizeof(buffer), 0);
-        if (data_len < 0) {
-            fprintf(stderr, "Error on receiving command --> %s", strerror(errno));
-            exit(EXIT_FAILURE);
-        }
-        printf("received data_len from client: %d\n", data_len);
-        printf("received buffer from client: %c%c\n", buffer[0], buffer[1]);
-        ServerConnection server_conn = servers_connections[chooseServer(servers_connections, buffer[0], buffer[1])];
-        send(server_conn->lb_server_socket, buffer, sizeof(buffer), 0);
-        memset(buffer, 0, sizeof(buffer));
-        data_len = recv(server_conn->lb_server_socket, buffer, sizeof(buffer), 0);
-        printf("received data_len from server: %d\n", data_len);
-        printf("received buffer from server: %c%c\n", buffer[0], buffer[1]);
-        send(client_socket, buffer, sizeof(buffer), 0);
-        close(client_socket);
-        //close(master_socket);
-        //}
-        //else {
-          //  close(client_socket);
-        //}
     }
-    //    close(master_socket);
-    //    return 0;
+    // close(master_socket);
+    // return 0;
 }
 
 int chooseServer(ServerConnection servers_connections[], char request_type, int request_len) {
@@ -293,4 +280,46 @@ void initServerConnections(ServerConnection servers_connections[]) {
         servers_connections[i]->request_fifo = NULL;
         servers_connections[i]->lb_server_socket = createLBServerSocket(server_address);
     }
+}
+
+void *clientToServerThread(void *vargp) {
+    int client_socket = *((int *) vargp);
+    CustomerRequest customer_req = (CustomerRequest)malloc(sizeof(struct CustomerRequest));
+    customer_req->client_socket = client_socket;
+    // continue building customer_req
+    int server_index = AddCustomerRequest(servers_connections, customer_req);
+    ServerConnection server_conn = servers_connections[server_index];
+
+    char buffer[2];
+    // memset(buffer, 0, sizeof(buffer));
+    int data_len = recv(customer_req->client_socket, buffer, sizeof(buffer), 0);
+    if (data_len < 0) {
+        fprintf(stderr, "Error on receiving command --> %s", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+    printf("received data_len from client: %d\n", data_len);
+    printf("received buffer from client: %c%c\n", buffer[0], buffer[1]);
+
+    send(server_conn->lb_server_socket, buffer, sizeof(buffer), 0);
+    return (void *) server_index;
+}
+
+void serverToClientThread(void *vargp) {
+    int server_index = *((int *) vargp);
+    ServerConnection server_conn = servers_connections[server_index];
+    CustomerRequest customer_req = RemoveCustomerRequest(servers_connections, server_index);
+
+    char buffer[2];
+    // memset(buffer, 0, sizeof(buffer));
+    int data_len = recv(server_conn->lb_server_socket, buffer, sizeof(buffer), 0);
+    if (data_len < 0) {
+        fprintf(stderr, "Error on receiving result --> %s", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+    printf("received data_len from server: %d\n", data_len);
+    printf("received buffer from server: %c%c\n", buffer[0], buffer[1]);
+    
+    send(customer_req->client_socket, buffer, sizeof(buffer), 0);
+    close(client_socket);
+    pthread_exit(0);
 }
