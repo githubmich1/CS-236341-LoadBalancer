@@ -50,6 +50,8 @@ ServerConnection servers_connections[SERVERS_COUNT];
 
 int chooseServer(ServerConnection servers_connections[], char request_type, int request_len);
 void initServerConnections(ServerConnection servers_connections[]);
+void *clientToServerThread(void *vargp);
+void serverToClientThread(void *vargp);
 
 void InitRequest(CustomerRequest c, int customer_num, char request_type, int request_len) {
     c->customer_num = customer_num;
@@ -171,13 +173,13 @@ int main() {
     pthread_t client_thread_id = NULL;
     pthread_t server_thread_id = NULL;
     while (1) {
-        void *returnValue; //server_index
-        if (client_thread_id) pthread_join(client_thread_id, &returnValue);
+        int* server_index;
+        if (client_thread_id) pthread_join(client_thread_id, (void**) &server_index);
 
         if (server_thread_id)  pthread_join(server_thread_id, NULL);
-        if (client_thread_id)  pthread_create(&server_thread_id, NULL, serverToClientThread, returnValue);
+        if (client_thread_id)  pthread_create(&server_thread_id, NULL, serverToClientThread, server_index);
 
-        printf(stderr, "Waiting on \'accept\'\n");
+        printf("Waiting on \'accept\'\n");
         int client_socket = accept(master_socket, (struct sockaddr*)&client_addr, &sock_len);
 
         pthread_create(&client_thread_id, NULL, clientToServerThread, &client_socket);
@@ -302,7 +304,9 @@ void *clientToServerThread(void *vargp) {
     printf("received buffer from client: %c%c\n", buffer[0], buffer[1]);
 
     send(server_conn->lb_server_socket, buffer, sizeof(buffer), 0);
-    return (void *) server_index;
+    int* result = malloc(sizeof(int));
+    *result = server_index;
+    return (void *) result;
 }
 
 void serverToClientThread(void *vargp) {
