@@ -101,10 +101,13 @@ void Push(CyclicBuffer cyclic_buffer, CustomerRequest c) {
 
 //Adds a request to a server (which will be chosen appropriatly by chooseServer method)//
 int AddCustomerRequest(ServerConnection servers_connections[], CustomerRequest c) {
+    printf("AddCustomerRequest debug 1\n");
     int server_num = chooseServer(servers_connections, c->request_type, c->request_len);
     ServerConnection s = servers_connections[server_num];
+    printf("AddCustomerRequest debug 2\n");
     int multiplier = 0;
     Push(s->request_fifo, c);
+    printf("AddCustomerRequest debug 3\n");
     if (server_num == 0 || server_num == 1) {
         if (c->request_type == 'M') multiplier = 2;
         if (c->request_type == 'P') multiplier = 1;
@@ -118,6 +121,7 @@ int AddCustomerRequest(ServerConnection servers_connections[], CustomerRequest c
     }
     int delta = multiplier * c->request_len;
     s->load += delta;
+    printf("%d\n", server_num);
     return server_num;
 }
 
@@ -333,10 +337,13 @@ void *clientToServerThread(void *vargp) {
 
     CustomerRequest customer_req = InitRequest(client_socket, 0, buffer[0], buffer[1]);
     // continue building customer_req
+    printf("debug 1\n");
     int server_index = AddCustomerRequest(servers_connections, customer_req);
+    printf("debug 2\n");
     ServerConnection server_conn = servers_connections[server_index];
 
     send(server_conn->lb_server_socket, buffer, sizeof(buffer), 0);
+    printf("debug 3\n");
     int* result = malloc(sizeof(int));
     *result = server_index;
     return (void *) result;
