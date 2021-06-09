@@ -53,10 +53,13 @@ void initServerConnections(ServerConnection servers_connections[]);
 void *clientToServerThread(void *vargp);
 void *serverToClientThread(void *vargp);
 
-void InitRequest(CustomerRequest c, int customer_num, char request_type, int request_len) {
+CustomerRequest InitRequest(int client_socket, int customer_num, char request_type, int request_len) {
+    CustomerRequest c = (CustomerRequest)malloc(sizeof(struct CustomerRequest));
+    c->client_socket = client_socket;
     c->customer_num = customer_num;
     c->request_type = request_type;
     c->request_len = request_len;
+    return c;
 }
 
 CustomerRequest Pop(CyclicBuffer cyclic_buffer) {
@@ -211,6 +214,7 @@ int main() {
         printf("received buffer from server: %c%c\n", buffer[0], buffer[1]);
         
         send(client_socket, buffer, sizeof(buffer), 0);
+        RemoveCustomerRequest(servers_connections, *server_index);
         close(client_socket);
 
 
@@ -316,21 +320,21 @@ void initServerConnections(ServerConnection servers_connections[]) {
 void *clientToServerThread(void *vargp) {
     int client_socket = *((int *) vargp);
     printf("in clientToServerThread, client_socket: %d\n", client_socket);
-    CustomerRequest customer_req = (CustomerRequest)malloc(sizeof(struct CustomerRequest));
-    customer_req->client_socket = client_socket;
-    // continue building customer_req
-    int server_index = AddCustomerRequest(servers_connections, customer_req);
-    ServerConnection server_conn = servers_connections[server_index];
-
+    
     char buffer[2];
     // memset(buffer, 0, sizeof(buffer));
-    int data_len = recv(customer_req->client_socket, buffer, sizeof(buffer), 0);
+    int data_len = recv(client_socket, buffer, sizeof(buffer), 0);
     if (data_len < 0) {
         fprintf(stderr, "Error on receiving command --> %s", strerror(errno));
         exit(EXIT_FAILURE);
     }
     printf("received data_len from client: %d\n", data_len);
     printf("received buffer from client: %c%c\n", buffer[0], buffer[1]);
+
+    CustomerRequest customer_req = InitRequest(client_socket, 0, buffer[0], buffer[1]);
+    // continue building customer_req
+    int server_index = AddCustomerRequest(servers_connections, customer_req);
+    ServerConnection server_conn = servers_connections[server_index];
 
     send(server_conn->lb_server_socket, buffer, sizeof(buffer), 0);
     int* result = malloc(sizeof(int));
