@@ -92,9 +92,12 @@ CustomerRequest RemoveCustomerRequest(ServerConnection servers_connections[], in
 }
 
 void Push(CyclicBuffer cyclic_buffer, CustomerRequest c) {
+    printf("Push debug 1\n");
     assert(cyclic_buffer->fifo_full == false);
+    printf("Push debug 2\n");
     cyclic_buffer->fifo[cyclic_buffer->fifo_write] = c;
     cyclic_buffer->fifo_write = (cyclic_buffer->fifo_write + 1) % BUFFER_SIZE;
+    printf("Push debug 3\n");
     if (cyclic_buffer->fifo_read == cyclic_buffer->fifo_write) cyclic_buffer->fifo_full = true;
 
 }
@@ -137,9 +140,12 @@ void printServerConnections(ServerConnection servers_connections[]) {
     }
 }
 
-void InitCyclicBuffer(CyclicBuffer c) {
-    c->fifo_read = 0;
-    c->fifo_write = 0;
+CyclicBuffer InitCyclicBuffer() {
+    CyclicBuffer cb = (CyclicBuffer)malloc(sizeof(struct CyclicBuffer));
+    cb->fifo_read = 0;
+    cb->fifo_write = 0;
+    cb->fifo_full = false;
+    return cb;
 }
 
 int main() {
@@ -316,7 +322,7 @@ void initServerConnections(ServerConnection servers_connections[]) {
         servers_connections[i]->load = 0;
         servers_connections[i]->delta = 0;
         servers_connections[i]->new_load = 0;
-        servers_connections[i]->request_fifo = NULL;
+        servers_connections[i]->request_fifo = InitCyclicBuffer();
         servers_connections[i]->lb_server_socket = createLBServerSocket(server_address);
     }
 }
