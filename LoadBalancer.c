@@ -322,8 +322,11 @@ void initServerConnections(ServerConnection servers_connections[]) {
         servers_connections[i]->load = 0;
         servers_connections[i]->delta = 0;
         servers_connections[i]->new_load = 0;
-        servers_connections[i]->request_fifo = InitCyclicBuffer();
+        servers_connections[i]->request_fifo = NULL;
         servers_connections[i]->lb_server_socket = createLBServerSocket(server_address);
+        servers_connections[i]->request_fifo->fifo_read = 0;
+        servers_connections[i]->request_fifo->fifo_write = 0;
+        servers_connections[i]->request_fifo->fifo_full = false;
     }
 }
 
